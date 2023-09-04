@@ -58,15 +58,15 @@ class Request:
         return self.timestamp - self.processing_time
 
 #Function to process 1 server.
-def simulateOneServer(reader):
+def simulateOneServer(csv_data):
     #Instantialization
     server = Server()
     queue = Queue()
     waiting_times = []
 
     #Pass each row to calculate the
-    for row in reader:
-        print(row[0])
+    for row in csv_data:
+        #print(row[0])
         timestamp = int(row[0])
         processing_time = int(row[2])
         request = Request(timestamp, processing_time)
@@ -80,25 +80,25 @@ def simulateOneServer(reader):
         server.tick()
 
     average_wait = (sum(waiting_times)) / (len(waiting_times))
-    print("For 1 Server, average Wait %6.2f secs %3d tasks remaining." % (average_wait, queue.size()))
+    print(f"For 1 Server, average wait time is {average_wait:.4f} secs." )
 
 #Function to simulate many servers
-def simulateManyServers(reader, manyservers):
-    #Instantiate
+def simulateManyServers(csv_data, num_servers):
+    
     server = Server()
     queue = Queue()
     waiting_times = []
     server_list = []
 
     #Create a listing of multiple servers
-    for i in range(manyservers):
+    for i in range(num_servers):
         server_list.append(server)
 
     #Iterate for each server in server list
         for j in server_list:
-            for row in reader:
-                timestamp = row[0]
-                processing_time = row[2]
+            for row in csv_data:
+                timestamp = int(row[0])
+                processing_time = int(row[2])
                 request = Request(timestamp, processing_time)
                 queue.enqueue(request)
 
@@ -110,8 +110,7 @@ def simulateManyServers(reader, manyservers):
                 server.tick()
 
     average_wait = (sum(waiting_times)) / (len(waiting_times))
-    print("For %3d Servers, average Wait %6.2f secs %3d tasks remaining." % (len(server_list), average_wait,
-                                                                               queue.size()))
+    print(f"For {len(server_list)} servers, average wait time is {average_wait:.4f} secs") 
 def main(file, servers=None):
     if servers is None:
         simulateOneServer(file)
@@ -127,5 +126,5 @@ if __name__ == "__main__":
 
     # Replace 3 with the desired number of servers
     num_servers = 3
-    main(cr)
+    main(cr,num_servers)
 
