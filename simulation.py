@@ -1,5 +1,4 @@
 import csv
-import random
 import urllib.request
 
 #Implement Queue Class (from book).
@@ -71,6 +70,7 @@ def simulateOneServer(csv_data):
         processing_time = int(row[2])
         request = Request(timestamp, processing_time)
         queue.enqueue(request)
+        # Check if the server is not busy and its queue is not empty
 
         if (not server.busy()) and (not queue.is_empty()):
             new_request = queue.dequeue()
@@ -84,33 +84,38 @@ def simulateOneServer(csv_data):
 
 #Function to simulate many servers
 def simulateManyServers(csv_data, num_servers):
-    
-    server = Server()
-    queue = Queue()
-    waiting_times = []
-    server_list = []
+    server_pool = [Server() for _ in range(num_servers)]
+    queues = [Queue() for _ in range(num_servers)]
+    waiting_times = [0] * num_servers
+    current_server = 0
 
-    #Create a listing of multiple servers
+    for row in csv_data:
+        timestamp = int(row[0])
+        processing_time = int(row[2])
+        request = Request(timestamp, processing_time)
+        
+        # Enqueue the request into the current server's queue
+        queues[current_server].enqueue(request)
+        
+        # Check if the current server is not busy and its queue is not empty
+        if (not server_pool[current_server].busy()) and (not queues[current_server].is_empty()):
+            new_request = queues[current_server].dequeue()
+            waiting_times[current_server] += new_request.wait_time(timestamp)
+            server_pool[current_server].start_next(request)
+        
+        server_pool[current_server].tick()
+        # Move to the next server in round-robin fashion
+        current_server = (current_server + 1) % num_servers  
+    total=0
     for i in range(num_servers):
-        server_list.append(server)
+        average_wait = waiting_times[i] / queues[i].size()
+        total+=average_wait
+        print(f"For Server {i + 1}, average wait time is {average_wait:.4f} secs")
+    overallAverage=total/num_servers 
+    print ("\n")   
+    print (f"Overall average wait time for {num_servers} servers is {overallAverage:.4f}")
 
-    #Iterate for each server in server list
-        for j in server_list:
-            for row in csv_data:
-                timestamp = int(row[0])
-                processing_time = int(row[2])
-                request = Request(timestamp, processing_time)
-                queue.enqueue(request)
 
-                if (not server.busy()) and (not queue.is_empty()):
-                    new_request = queue.dequeue()
-                    waiting_times.append(new_request.wait_time(timestamp))
-                    server.start_next(request)
-
-                server.tick()
-
-    average_wait = (sum(waiting_times)) / (len(waiting_times))
-    print(f"For {len(server_list)} servers, average wait time is {average_wait:.4f} secs") 
 def main(file, servers=None):
     if servers is None:
         simulateOneServer(file)
@@ -125,6 +130,7 @@ if __name__ == "__main__":
     cr = csv.reader(lines)
 
     # Replace 3 with the desired number of servers
+    
     num_servers = 3
     main(cr,num_servers)
 
