@@ -1,4 +1,3 @@
-import io 
 import csv
 import random
 import urllib.request
@@ -35,10 +34,8 @@ import random
 def random_load_balancing(servers):
     return random.choice(servers)
 
-def simulateOneServer(file):
-    with open(file, 'r') as f:
-        lines = f.readlines()
-
+def simulateOneServer(csv_data):
+    lines = csv_data.splitlines()
     server = Server()
     waiting_times = []
 
@@ -61,10 +58,8 @@ def simulateOneServer(file):
     average_wait_time = sum(waiting_times) / len(waiting_times) if waiting_times else 0
     return average_wait_time
 
-def simulateManyServersRandom(file, servers):
-    with open(file, 'r') as f:
-        lines = f.readlines()
-
+def simulateManyServersRandom(csv_data, servers):
+    lines = csv_data.splitlines()
     server_pool = [Server() for _ in range(servers)]
     waiting_times = [[] for _ in range(servers)]
 
@@ -97,19 +92,12 @@ def simulateManyServersRandom(file, servers):
     average_wait_time = total_waiting_time / total_requests if total_requests else 0
     return average_wait_time
 
-def main(file, servers=None):
-    if servers is None:
-        average_wait_time = simulateOneServer(file)
-    else:
-        average_wait_time = simulateManyServersRandom(file, servers)
-
-    print(f"Average Wait Time: {average_wait_time:.f} seconds")
-
 if __name__ == "__main__":
-    url="http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv"
+    url = "http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv"
     with urllib.request.urlopen(url) as response:
-      _data = response.read().decode('utf-8')
+        csv_data = response.read().decode('utf-8')
 
     # Replace 3 with the desired number of servers
-    num_servers = 3  
-    main(_data)
+    num_servers = 3
+    average_wait_time = simulateManyServersRandom(csv_data, num_servers)
+    print(f"Average Wait Time: {average_wait_time:.2f} seconds")
