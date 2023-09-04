@@ -1,3 +1,8 @@
+import io 
+import csv
+import random
+import urllib.request
+
 class Request:
     def __init__(self, timestamp, url, processing_time):
         self.timestamp = timestamp
@@ -38,7 +43,7 @@ def simulateOneServer(file):
     waiting_times = []
 
     for line in lines:
-        parts = line.strip().split(', ')
+        parts = line.strip().split(',')
         timestamp, url, processing_time = int(parts[0]), parts[1], int(parts[2])
         request = Request(timestamp, url, processing_time)
 
@@ -64,7 +69,7 @@ def simulateManyServersRandom(file, servers):
     waiting_times = [[] for _ in range(servers)]
 
     for line in lines:
-        parts = line.strip().split(', ')
+        parts = line.strip().split(',')
         timestamp, url, processing_time = int(parts[0]), parts[1], int(parts[2])
         request = Request(timestamp, url, processing_time)
 
@@ -98,9 +103,13 @@ def main(file, servers=None):
     else:
         average_wait_time = simulateManyServersRandom(file, servers)
 
-    print(f"Average Wait Time: {average_wait_time:.2f} seconds")
+    print(f"Average Wait Time: {average_wait_time:.f} seconds")
 
 if __name__ == "__main__":
-    input_file = "requests.csv"  # Replace with the actual input file path
-    num_servers = 2  # Replace with the desired number of servers
-    main(input_file, num_servers)
+    url="http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv"
+    with urllib.request.urlopen(url) as response:
+      _data = response.read().decode('utf-8')
+
+    # Replace 3 with the desired number of servers
+    num_servers = 3  
+    main(_data)
