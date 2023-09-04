@@ -1,5 +1,7 @@
 import csv
 import urllib.request
+import sys
+import argparse
 
 #Implement Queue Class (from book).
 class Queue:
@@ -116,21 +118,28 @@ def simulateManyServers(csv_data, num_servers):
     print (f"Overall average wait time for {num_servers} servers is {overallAverage:.4f}")
 
 
-def main(file, servers=None):
-    if servers is None:
-        simulateOneServer(file)
-    else:
-        simulateManyServers(file, servers)
-    
-
-if __name__ == "__main__":
-    url = 'http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv'
+def main(url, servers):
     response = urllib.request.urlopen(url)
     lines = [l.decode('utf-8') for l in response.readlines()]
     cr = csv.reader(lines)
-
-    # Replace 3 with the desired number of servers
+    servers=int(servers)
+    if servers==1:
+        simulateOneServer(cr)
+    else:
+        simulateManyServers(cr, servers)
     
-    num_servers = 3
-    main(cr,num_servers)
+
+if __name__ == "__main__":
+   # url = 'http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv'
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("url", type=str, help="URL parameter without any double quotation")
+    parser.add_argument("numOfServer", type=str, help="Number of server")
+    args = parser.parse_args()
+
+    if args.url and args.numOfServer:
+           main(args.url,args.numOfServer)
+    else:
+        print("URL Invalid or Server no. Exiting the program.")
+        sys.exit()
 
