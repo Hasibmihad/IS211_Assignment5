@@ -2,100 +2,122 @@ import csv
 import random
 import urllib.request
 
-class Request:
-    def __init__(self, timestamp, url, processing_time):
-        self.timestamp = timestamp
-        self.url = url
-        self.processing_time = processing_time
+#Implement Queue Class (from book).
+class Queue:
+    def __init__(self):
+        self.items = []
 
-    def get_timestamp(self):
+    def is_empty(self):
+        return self.items == []
+
+    def enqueue(self, item):
+        self.items.insert(0,item)
+
+    def dequeue(self):
+        return self.items.pop()
+
+    def size(self):
+        return len(self.items)
+
+#Implement Server Class (similar to Printer class from book)
+class Server:
+    def __init__(self):
+        self.current_task = None
+        self.time_remaining = 0
+
+    def tick(self):
+        if self.current_task != None:
+            self.time_remaining = self.time_remaining - 1
+            if self.time_remaining <= 0:
+                self.current_task = None
+
+    def busy(self):
+        if self.current_task != None:
+            return True
+        else:
+            return False
+
+    def start_next(self,new_task):
+        self.current_task = new_task
+        self.time_remaining = new_task.get_processing_time()
+
+
+#Implement Request Class (similar to Task class from book)
+class Request:
+    def __init__(self, timestamp, processing_time):
+        self.timestamp = int(timestamp)
+        self.processing_time = int(processing_time)
+
+    def get_stamp(self):
         return self.timestamp
 
     def get_processing_time(self):
         return self.processing_time
 
-class Server:
-    def __init__(self):
-        self.current_request = None
-        self.time_remaining = 0
+    def wait_time(self, timestamp):
+        return self.timestamp - self.processing_time
 
-    def process_request(self, request):
-        self.current_request = request
-        self.time_remaining = request.get_processing_time()
-
-    def tick(self):
-        if self.current_request:
-            self.time_remaining -= 1
-            if self.time_remaining <= 0:
-                self.current_request = None
-
-
-def random_load_balancing(servers):
-    return random.choice(servers)
-
-def simulateOneServer(csv_data):
+#Function to process 1 server.
+def simulateOneServer(reader):
+    #Instantialization
     server = Server()
+    queue = Queue()
     waiting_times = []
 
-    for line in csv_data:
-        timestamp, url, processing_time = int(line[0]), line[1], int(line[2])
-        #print(timestamp, url, processing_time)
-        request = Request(timestamp, url, processing_time)
+    #Pass each row to calculate the
+    for row in reader:
+        print(row[0])
+        timestamp = int(row[0])
+        processing_time = int(row[2])
+        request = Request(timestamp, processing_time)
+        queue.enqueue(request)
 
-        while timestamp > server.time_remaining:
-            server.tick()
+        if (not server.busy()) and (not queue.is_empty()):
+            new_request = queue.dequeue()
+            waiting_times.append(new_request.wait_time(timestamp))
+            server.start_next(request)
 
-        if not server.current_request:
-            server.process_request(request)
-        else:
-            waiting_times.append(timestamp)
-
-    while server.current_request:
         server.tick()
 
-    average_wait_time = sum(waiting_times) / len(waiting_times) if waiting_times else 0
-    return average_wait_time
+    average_wait = (sum(waiting_times)) / (len(waiting_times))
+    print("For 1 Server, average Wait %6.2f secs %3d tasks remaining." % (average_wait, queue.size()))
 
-def simulateManyServersRandom(csv_data, servers):
-    server_pool = [Server() for _ in range(servers)]
-    waiting_times = [[] for _ in range(servers)]
+#Function to simulate many servers
+def simulateManyServers(reader, manyservers):
+    #Instantiate
+    server = Server()
+    queue = Queue()
+    waiting_times = []
+    server_list = []
 
-    for line in csv_data:
+    #Create a listing of multiple servers
+    for i in range(manyservers):
+        server_list.append(server)
 
-        timestamp, url, processing_time = int(line[0]), line[1], line[2]
-        request = Request(timestamp, url, processing_time)
+    #Iterate for each server in server list
+        for j in server_list:
+            for row in reader:
+                timestamp = row[0]
+                processing_time = row[2]
+                request = Request(timestamp, processing_time)
+                queue.enqueue(request)
 
-        # Choose a server using random load balancing
-        server = random_load_balancing(server_pool)
+                if (not server.busy()) and (not queue.is_empty()):
+                    new_request = queue.dequeue()
+                    waiting_times.append(new_request.wait_time(timestamp))
+                    server.start_next(request)
 
-        while timestamp > server.time_remaining:
-            server.tick()
-            server_pool.append(server)
-            server = random_load_balancing(server_pool)
+                server.tick()
 
-        if not server.current_request:
-            server.process_request(request)
-        else:
-            waiting_times[server_pool.index(server)].append(timestamp)
-
-    for server in server_pool:
-        while server.current_request:
-            server.tick()
-            server_pool.append(server)
-            server = random_load_balancing(server_pool)
-
-    total_waiting_time = sum(sum(times) for times in waiting_times)
-    total_requests = sum(len(times) for times in waiting_times)
-    average_wait_time = total_waiting_time / total_requests if total_requests else 0
-    return average_wait_time
-
-
+    average_wait = (sum(waiting_times)) / (len(waiting_times))
+    print("For %3d Servers, average Wait %6.2f secs %3d tasks remaining." % (len(server_list), average_wait,
+                                                                               queue.size()))
 def main(file, servers=None):
     if servers is None:
-        average_wait_time = simulateOneServer(file)
+        simulateOneServer(file)
     else:
-        average_wait_time = simulateManyServersRandom(file, servers)
-    print(f"Average Wait Time: {average_wait_time:.2f} seconds")
+        simulateManyServers(file, servers)
+    
 
 if __name__ == "__main__":
     url = 'http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv'
