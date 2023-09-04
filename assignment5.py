@@ -29,19 +29,17 @@ class Server:
             if self.time_remaining <= 0:
                 self.current_request = None
 
-import random
 
 def random_load_balancing(servers):
     return random.choice(servers)
 
 def simulateOneServer(csv_data):
-    lines = csv_data.splitlines()
     server = Server()
     waiting_times = []
 
-    for line in lines:
-        parts = line.strip().split(',')
-        timestamp, url, processing_time = int(parts[0]), parts[1], int(parts[2])
+    for line in csv_data:
+        timestamp, url, processing_time = int(line[0]), line[1], int(line[2])
+        #print(timestamp, url, processing_time)
         request = Request(timestamp, url, processing_time)
 
         while timestamp > server.time_remaining:
@@ -59,13 +57,12 @@ def simulateOneServer(csv_data):
     return average_wait_time
 
 def simulateManyServersRandom(csv_data, servers):
-    lines = csv_data.splitlines()
     server_pool = [Server() for _ in range(servers)]
     waiting_times = [[] for _ in range(servers)]
 
-    for line in lines:
-        parts = line.strip().split(',')
-        timestamp, url, processing_time = int(parts[0]), parts[1], int(parts[2])
+    for line in csv_data:
+
+        timestamp, url, processing_time = int(line[0]), line[1], line[2]
         request = Request(timestamp, url, processing_time)
 
         # Choose a server using random load balancing
@@ -100,11 +97,12 @@ def main(file, servers=None):
     print(f"Average Wait Time: {average_wait_time:.2f} seconds")
 
 if __name__ == "__main__":
-    url = "http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv"
-    with urllib.request.urlopen(url) as response:
-        csv_data = response.read().decode('utf-8')
+    url = 'http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv'
+    response = urllib.request.urlopen(url)
+    lines = [l.decode('utf-8') for l in response.readlines()]
+    cr = csv.reader(lines)
 
     # Replace 3 with the desired number of servers
     num_servers = 3
-    main(csv_data)
-    
+    main(cr)
+
