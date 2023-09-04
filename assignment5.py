@@ -92,6 +92,13 @@ def simulateManyServersRandom(csv_data, servers):
     average_wait_time = total_waiting_time / total_requests if total_requests else 0
     return average_wait_time
 
+def main(file, servers=None):
+    if servers is None:
+        average_wait_time = simulateOneServer(file)
+    else:
+        average_wait_time = simulateManyServersRandom(file, servers)
+    print(f"Average Wait Time: {average_wait_time:.2f} seconds")
+
 if __name__ == "__main__":
     url = "http://s3.amazonaws.com/cuny-is211-spring2015/requests.csv"
     with urllib.request.urlopen(url) as response:
@@ -99,5 +106,5 @@ if __name__ == "__main__":
 
     # Replace 3 with the desired number of servers
     num_servers = 3
-    average_wait_time = simulateManyServersRandom(csv_data, num_servers)
-    print(f"Average Wait Time: {average_wait_time:.2f} seconds")
+    main(csv_data)
+    
